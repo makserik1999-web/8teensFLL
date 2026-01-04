@@ -6,6 +6,7 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor
 from pybricks.parameters import Port, Direction, Button, Color
 from pybricks.tools import wait
+from pybricks.pupdevices import ColorSensor
 
 hub = PrimeHub()
 
@@ -17,6 +18,7 @@ print("Загрузка...")
 left_motor = Motor(Port.A)
 right_motor = Motor(Port.E, Direction.COUNTERCLOCKWISE)
 motor_b = Motor(Port.B)
+motor_f = Motor(Port.F)
 
 print("OK!")
 
@@ -223,13 +225,278 @@ def rotate(motor, target_angle, min_speed=50, max_speed=1000):
     
     motor.hold()
 
+def gyro_straight_with_motor(distance_degrees, motor, motor_angle, 
+                              speed=300, gain=3.0, motor_speed=500):
+    """
+    Едет прямо И одновременно вращает мотор
+    
+    Args:
+        distance_degrees: Дистанция движения (градусы колёс)
+        motor: Какой мотор вращать (motor_b или другой)
+        motor_angle: На сколько градусов повернуть мотор
+        speed: Скорость движения
+        gain: Коэффициент гироскопа
+        motor_speed: Скорость вращения мотора
+    
+    Пример:
+        gyro_straight_with_motor(500, motor_b, 180)  # Едет и поднимает руку
+    """
+    hub.imu.reset_heading(0)
+    left_motor.reset_angle(0)
+    
+    # Запускаем мотор БЕЗ ожидания (работает в фоне)
+    motor.run_angle(motor_speed, motor_angle, wait=False)
+    
+    while abs(left_motor.angle()) < distance_degrees:
+        check_stop()
+        
+        heading = hub.imu.heading()
+        correction = heading * -1 * gain
+        left_motor.run(speed - correction)
+        right_motor.run(speed + correction)
+        wait(10)
+    
+    left_motor.brake()
+    right_motor.brake()
+    
+    # Ждём пока мотор закончит (если ещё не закончил)
+    while not motor.done():
+        check_stop()
+        wait(10)
+
+
+def gyro_back_with_motor(distance_degrees, motor, motor_angle,
+                          speed=300, gain=3.0, motor_speed=500):
+    """
+    Едет назад И одновременно вращает мотор
+    
+    Пример:
+        gyro_back_with_motor(500, motor_b, -90)  # Едет назад и опускает руку
+    """
+    hub.imu.reset_heading(0)
+    left_motor.reset_angle(0)
+    
+    motor.run_angle(motor_speed, motor_angle, wait=False)
+    
+    while left_motor.angle() > -distance_degrees:
+        check_stop()
+        
+        heading = hub.imu.heading()
+        correction = heading * gain
+        left_motor.run(-speed + correction)
+        right_motor.run(-speed - correction)
+        wait(10)
+    
+    left_motor.brake()
+    right_motor.brake()
+    
+    while not motor.done():
+        check_stop()
+        wait(10)
+
+
+def gyro_turn_with_motor(target_angle, motor, motor_angle,
+                          accuracy=2, motor_speed=500):
+    """
+    Поворачивает И одновременно вращает мотор
+    
+    Пример:
+        gyro_turn_with_motor(90, motor_b, 180)  # Поворот + поднять руку
+    """
+    hub.imu.reset_heading(0)
+    
+    motor.run_angle(motor_speed, motor_angle, wait=False)
+    
+    while True:
+        check_stop()
+        
+        current = hub.imu.heading()
+        error = target_angle - current
+        
+        if error > 180:
+            error -= 360
+        elif error < -180:
+            error += 360
+        
+        if abs(error) <= accuracy:
+            break
+        
+        if abs(error) > 30:
+            speed = 300
+        else:
+            speed = abs(error) * 2.5
+            if speed < 35:
+                speed = 35
+        
+        if error > 0:
+            left_motor.run(-speed)
+            right_motor.run(speed)
+        else:
+            left_motor.run(speed)
+            right_motor.run(-speed)
+        
+        wait(10)
+    
+    left_motor.stop()
+    right_motor.stop()
+    
+    while not motor.done():
+        check_stop()
+        wait(10)
+
+
+def move_both_motors(motor1, angle1, motor2, angle2, speed1=500, speed2=500):
+    """
+    Вращает ДВА мотора одновременно
+    
+    Args:
+        motor1: Первый мотор
+        angle1: Угол первого мотора
+        motor2: Второй мотор  
+        angle2: Угол второго мотора
+        speed1, speed2: Скорости
+    
+    Пример:
+        move_both_motors(motor_b, 180, motor_f, -90)  # Оба мотора сразу
+    """
+    motor1.run_angle(speed1, angle1, wait=False)
+    motor2.run_angle(speed2, angle2, wait=False)
+    
+    # Ждём пока оба закончат
+    while not motor1.done() or not motor2.done():
+        check_stop()
+        wait(10)
+
+
+def start_motor(motor, angle, speed=500):
+    """
+    Запускает мотор в фоне (не ждёт завершения)
+    
+    Пример:
+        start_motor(motor_b, 180)
+        gyro_straight(500)  # Едет пока мотор крутится
+        wait_motor(motor_b)  # Ждёт завершения
+    """
+    motor.run_angle(speed, angle, wait=False)
+
+
+def wait_motor(motor):
+    """Ждёт пока мотор закончит вращение"""
+    while not motor.done():
+        check_stop()
+        wait(10)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                      ВЫРАВНИВАНИЕ ПО ЛИНИИ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+sensor_left = ColorSensor(Port.D) 
+sensor_right = ColorSensor(Port.C)
+BLACK = 15    
+WHITE = 70
+
+def align_two_sensors(sensor_left, sensor_right, speed=100, timeout=3000):
+    """
+    Выравнивание по линии двумя датчиками
+    Чёрное = меньше 20
+    """
+    BLACK_THRESHOLD = 20
+    
+    left_count = 0
+    right_count = 0
+    CONFIRM_COUNT = 3
+    
+    left_done = False
+    right_done = False
+    timer = 0
+    
+    while timer < timeout:
+        check_stop()
+        
+        left_val = sensor_left.reflection()
+        right_val = sensor_right.reflection()
+        
+        if left_val < BLACK_THRESHOLD:
+            left_count += 1
+            if left_count >= CONFIRM_COUNT:
+                left_done = True
+        else:
+            left_count = 0
+        
+        if right_val < BLACK_THRESHOLD:
+            right_count += 1
+            if right_count >= CONFIRM_COUNT:
+                right_done = True
+        else:
+            right_count = 0
+        
+        if left_done and right_done:
+            break
+        
+        if left_done:
+            left_motor.brake()
+        else:
+            left_motor.run(speed)
+        
+        if right_done:
+            right_motor.brake()
+        else:
+            right_motor.run(speed)
+        
+        wait(10)
+        timer += 10
+    
+    left_motor.brake()
+    right_motor.brake()
+
+
+def align_two_sensors_back(sensor_left, sensor_right):
+    """
+    Выравнивание по линии НАЗАД двумя датчиками
+    """
+    left_on_line = False
+    right_on_line = False
+    timer = 0
+    
+    while timer < timeout:
+        check_stop()
+        
+        left_val = sensor_left.reflection()
+        right_val = sensor_right.reflection()
+        
+        if left_val < BLACK + 10:
+            left_on_line = True
+        
+        if right_val < BLACK + 10:
+            right_on_line = True
+        
+        if left_on_line and right_on_line:
+            break
+        
+        if left_on_line:
+            left_motor.brake()
+        else:
+            left_motor.run(-speed)
+        
+        if right_on_line:
+            right_motor.brake()
+        else:
+            right_motor.run(-speed)
+        
+        wait(10)
+        timer += 10
+    
+    left_motor.brake()
+    right_motor.brake()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #                              МИССИИ
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def mission_1():
-    gyro_straight_accel(1440, accel=200, decel=300, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_straight_accel(1400, accel=200, decel=300, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     gyro_turn(-50, accuracy=3)
     gyro_straight_accel(340, accel=200, decel=300, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     gyro_turn(6, accuracy=3)
@@ -244,31 +511,140 @@ def mission_1():
     wait(300)
     gyro_turn(100    , accuracy=3)
     gyro_straight_accel(600, accel=200, decel=300, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
-    gyro_turn(-110, accuracy=3)
+    gyro_turn(-105, accuracy=3)
     gyro_straight_accel(600, accel=20, decel=30, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
     rotate(motor_b, 60, min_speed=50, max_speed=1000)
     wait(500)
-    gyro_back(770, speed=1000, gain=5.0)
+    gyro_back(470, speed=1000, gain=5.0)
+    gyro_turn(40, accuracy=3)
+    gyro_back(470, speed=1000, gain=5.0)
+
+
+
+
 
 
 def mission_2():
-    gyro_straight_accel(1400, accel=200, decel=300, min_speed=100, max_speed=700, end_speed=80, gain=4.0)
-    gyro_turn(5, accuracy=2)
-    gyro_back_accel(1400, accel=100, decel=150, min_speed=80, max_speed=700, end_speed=60)
+    pass
 
 
 def mission_3():
-    gyro_straight_accel(1400, accel=200, decel=300, min_speed=60, max_speed=500, end_speed=20, gain=6.0)
-    # gyro_turn(180, accuracy=3)
-    # gyro_straight(500, speed=400, gain=3.0)
+    gyro_straight_accel(1100, accel=200, decel=200, min_speed=150, max_speed=650, end_speed=80, gain=5.0)
+    gyro_back_accel(170, accel=100, decel=100, min_speed=80, max_speed=800, end_speed=60)
+    gyro_turn(-40, accuracy=2)
+    gyro_straight_accel(150, accel=200, decel=150, min_speed=150, max_speed=700, end_speed=80, gain=5.0)
+    drift(460, -3, 900, False)
+    wait(100)
+    gyro_turn(-65, accuracy=2)
+    gyro_straight_accel(230, accel=100, decel=100, min_speed=150, max_speed=900, end_speed=80, gain=5.0)
+    gyro_turn(50, accuracy=2)
+    gyro_straight(70, 600, 5.0)
+    align_two_sensors(sensor_left, sensor_right)
+    #///////////////////////
+    wait(200)
+    gyro_back(50, 900, 4.0)
+    gyro_turn(28)
+    gyro_back(170, 900, 4.0)
+    rotate(motor_f, 100, 50, 700)
+    wait(100)
+    gyro_turn(40, 2)
+    gyro_turn(-60)
+    gyro_straight(100, 900, 4.0)
+    align_two_sensors(sensor_left, sensor_right)
+
+
+
+
+    # wait(200)
+    # gyro_back(240, 400, 5.0)
+    # gyro_turn(-20, 2)
+    # drift(310, 1, 500, False)
+    # wait(200)
+    # gyro_straight_with_motor(400, motor_f, 220, 600, 5.0, 500)
+    # wait(200)
+    # gyro_back(250, 400, 5.0)
+    # gyro_turn(50, 2.0)
+    
+
+    
+    
+    # wait(2000)
+    # drift(800, 0.6, 500, False)
+    # wait(2000)
+    # gyro_straight(120, 600, 5.0)
+    # wait(2000)
+    # drift(180, 2, 400, True)
+    # wait(2000)
+    # gyro_straight_with_motor(200, motor_f, 180, 600, 5.0, 500)
+    # gyro_back(200, 600, 5.0)
+    # gyro_turn(40, 2)
+    
+
+    
+
+
+
+
+
+
+
+
 
 
 def mission_4():
-    pass
+    rotate(motor_b, -36, min_speed=50, max_speed=100)
+    gyro_straight_accel(195, accel=200, decel=100, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_turn(-45, accuracy=2)
+    gyro_straight_accel(490, accel=200, decel=100, min_speed=100, max_speed=600, end_speed=80, gain=5.0)
+    rotate(motor_b, 70, min_speed=50, max_speed=1000)
+    gyro_back(420, speed=500, gain=5.0)
+    wait(200)
+    # rotate(motor_b, -90, min_speed=50, max_speed=700)
+    # wait(200)
+    # gyro_back(420, speed=500, gain=5.0)
+    rotate(motor_b, -90, min_speed=50, max_speed=700)
+    gyro_straight_accel(80, accel=200, decel=100, min_speed=100, max_speed=500, end_speed=80, gain=5.0)
+
+    gyro_straight_accel(230, accel=20, decel=10, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_turn(-20, accuracy=2)
+    gyro_turn(20, accuracy=2)
+    
+    
 
 
 def mission_5():
-    pass
+    gyro_straight_accel(810, accel=40, decel=100, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
+    # Tap-tap-tap
+    rotate(motor_b, 120, min_speed=50, max_speed=1000)
+    wait(200)
+    rotate(motor_b, -120, min_speed=50, max_speed=500)
+    wait(200)
+    rotate(motor_b, 120, min_speed=50, max_speed=1000)
+    wait(200)
+    rotate(motor_b, -120, min_speed=50, max_speed=500)
+    wait(200)
+    rotate(motor_b, 120, min_speed=50, max_speed=1000)
+    wait(200)
+    rotate(motor_b, -120, min_speed=50, max_speed=500)
+
+
+    gyro_back(120, speed=1000, gain=5.0)
+    gyro_turn(-90, accuracy=2)
+    drift(850, -0.8, 900, False)
+    wait(200)
+    gyro_straight_accel(550, accel=40, decel=100, min_speed=100, max_speed=900, end_speed=80, gain=5.0)
+    rotate(motor_b, 150, min_speed=50, max_speed=1000)
+    wait(200)
+    gyro_turn(-30, accuracy=2)
+    gyro_turn(100, accuracy=2)
+
+    
+
+
+
+    # gyro_back_accel(1400, accel=100, decel=150, min_speed=80, max_speed=700, end_speed=60)
+
+
 
 
 def mission_6():
