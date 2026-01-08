@@ -504,20 +504,22 @@ def mission_1():
     rotate(motor_b, -70, min_speed=50, max_speed=1000)
     gyro_back(200, speed=100, gain=1.0)
     gyro_turn(50, accuracy=3)
-    gyro_back_accel(650, accel=100, decel=100, min_speed=80, max_speed=700, end_speed=60)
+    gyro_back_accel(700, accel=100, decel=100, min_speed=80, max_speed=700, end_speed=60)
     gyro_turn(85, accuracy=3)
     gyro_back(150, speed=1000, gain=5.0)
     drift(700, -3, 300, True)
     wait(300)
     gyro_turn(100, accuracy=3)
-    gyro_straight_accel(600, accel=200, decel=300, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
+    gyro_straight_accel(300, accel=200, decel=300, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
     gyro_turn(-105, accuracy=3)
-    gyro_straight_accel(600, accel=20, decel=30, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
-    rotate(motor_b, 60, min_speed=50, max_speed=1000)
-    wait(500)
     gyro_back(470, speed=1000, gain=5.0)
-    gyro_turn(40, accuracy=3)
-    gyro_back(470, speed=1000, gain=5.0)
+
+    # gyro_straight_accel(600, accel=20, decel=30, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
+    # rotate(motor_b, 60, min_speed=50, max_speed=1000)
+    # wait(500)
+    # gyro_back(470, speed=1000, gain=5.0)
+    # gyro_turn(40, accuracy=3)
+    # gyro_back(470, speed=1000, gain=5.0)
 
 
 
@@ -529,43 +531,61 @@ def mission_2():
 
 
 def mission_3():
-    # gyro_straight_accel(1100, accel=200, decel=200, min_speed=150, max_speed=650, end_speed=80, gain=5.0)
-    # gyro_back_accel(160, accel=100, decel=100, min_speed=80, max_speed=800, end_speed=60)
-    # gyro_turn(-40, accuracy=2)
-    # gyro_straight_accel(170, accel=200, decel=140, min_speed=150, max_speed=700, end_speed=80, gain=5.0)
-    # drift(450, -3, 900, False)
-    # wait(100)
-    # gyro_turn(-65, accuracy=2)
-    # gyro_straight_accel(230, accel=100, decel=100, min_speed=150, max_speed=900, end_speed=80, gain=5.0)
-    # gyro_turn(45, accuracy=2)
-    # gyro_straight(80, 600, 5.0)
-    # align_two_sensors(sensor_left, sensor_right)
-    # #///////////////////////
-    # wait(200)
-    # gyro_back(50, 900, 4.0)
-    # gyro_turn(25)
-    # gyro_back(170, 900, 4.0)
-    # rotate(motor_f, 90, 50, 700)
-    # wait(100)
-    # gyro_turn(30, 2)
-    # gyro_straight(50, 400, 4.0)
-    # gyro_turn(-45)
-    # gyro_straight(140, 900, 4.0)
-    # align_two_sensors(sensor_left, sensor_right)
+    gyro_straight_accel(1100, accel=200, decel=200, min_speed=150, max_speed=650, end_speed=80, gain=5.0)
+    gyro_back_accel(160, accel=100, decel=100, min_speed=80, max_speed=800, end_speed=60)
+    gyro_turn(-40, accuracy=2)
+    gyro_straight_accel(170, accel=200, decel=140, min_speed=150, max_speed=700, end_speed=80, gain=5.0)
+    drift(450, -3, 900, False)
+    wait(100)
+    gyro_turn(-50, accuracy=2)
+    gyro_straight_accel(250, accel=10, decel=30, min_speed=150, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_turn(40, accuracy=2)
+    gyro_straight(30, 600, 5.0)
+    align_two_sensors(sensor_left, sensor_right)
+    #///////////////////////
+    wait(200)
+    gyro_back(50, 900, 4.0)
+    gyro_turn(25)
+    gyro_back(190, 900, 4.0)
+    rotate(motor_f, 90, 70, 250)
+    wait(100)
+    gyro_turn(30, 2)
+    gyro_straight(30, 400, 4.0)
+    rotate(motor_f, 100, 50, 250)
+    gyro_turn(-60)
+    gyro_straight(180, 400, 4.0)
+
+    align_two_sensors(sensor_left, sensor_right)
     #////////////////////////
     wait(200)
     gyro_turn(25)
-    gyro_straight_accel(300, accel=100, decel=150, min_speed=80, max_speed=700, end_speed=60)
+    gyro_straight_accel(300, accel=100, decel=150, min_speed=80, max_speed=1000, end_speed=60)
 
 
-    gyro_turn(-55, 2)
-    gyro_back(190, 400, 4.0)
+    gyro_turn(-30, 2)
+    drift(550, -0.4, 700, True)
+    rotate(motor_b, 300, 700, 1000)
+    gyro_turn(-3, 2)
     rotate(motor_b, 3000, 700, 1000)
-    rotate(motor_b, -500, 900, 1000)
-
+    rotate(motor_b, -400, 900, 1000)
 
     gyro_turn(-70, 2)
-    gyro_straight_accel(100, accel=20, decel=20, min_speed=80, max_speed=900, end_speed=60)
+    gyro_straight_accel(50, accel=10, decel=10, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_turn(80, 2)
+    gyro_straight(90, 500, 4.0)
+    gyro_turn(50, 2)
+    gyro_back_accel(100, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_turn(40, 2)
+    gyro_back_accel(250, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+
+    rotate(motor_f, -180, 900, 1000)
+    rotate(motor_f, 180, 900, 1000)
+    gyro_straight_accel(200, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_turn(-70, 2)
+    gyro_straight_accel(1400, accel=50, decel=50, min_speed=80, max_speed=1000, end_speed=60)
+
+
+
 
 
     
@@ -596,41 +616,63 @@ def mission_4():
 
 def mission_5():
     gyro_straight_accel(810, accel=40, decel=100, min_speed=100, max_speed=700, end_speed=80, gain=5.0)
-    # Tap-tap-tap
-    rotate(motor_b, 120, min_speed=50, max_speed=1000)
-    wait(200)
-    rotate(motor_b, -120, min_speed=50, max_speed=500)
-    wait(200)
-    rotate(motor_b, 120, min_speed=50, max_speed=1000)
-    wait(200)
-    rotate(motor_b, -120, min_speed=50, max_speed=500)
-    wait(200)
-    rotate(motor_b, 120, min_speed=50, max_speed=1000)
-    wait(200)
-    rotate(motor_b, -120, min_speed=50, max_speed=500)
-
+    # Tap-tap-tap-tap
+    rotate(motor_b, -140, min_speed=500, max_speed=1000)
+    wait(70)
+    rotate(motor_b, 120, min_speed=500, max_speed=500)
+    wait(70)
+    rotate(motor_b, -120, min_speed=500, max_speed=1000)
+    wait(70)
+    rotate(motor_b, 120, min_speed=500, max_speed=500)
+    wait(70)
+    rotate(motor_b, -120, min_speed=500, max_speed=1000)
+    wait(70)
+    rotate(motor_b, 120, min_speed=500, max_speed=500)
+    wait(70)
+    rotate(motor_b, -120, min_speed=500, max_speed=1000)
+    wait(70)
+    rotate(motor_b, 120, min_speed=500, max_speed=500)
+    # Tap-tap-tap-tap Final
 
     gyro_back(120, speed=1000, gain=5.0)
-    gyro_turn(-90, accuracy=2)
-    drift(850, -0.8, 900, False)
+    gyro_turn(-95, accuracy=2)
+    gyro_straight(150, 900, 5.0)
+    gyro_turn(90, 2)
     wait(200)
-    gyro_straight_accel(550, accel=40, decel=100, min_speed=100, max_speed=900, end_speed=80, gain=5.0)
-    rotate(motor_b, 150, min_speed=50, max_speed=1000)
+    gyro_straight_accel(810, accel=20, decel=40, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    rotate(motor_b, -150, min_speed=50, max_speed=1000)
     wait(200)
-    gyro_turn(-30, accuracy=2)
-    gyro_turn(100, accuracy=2)
-
+    gyro_turn(-22, accuracy=2)
+    gyro_back(20, 100, 4.0)
+    wait(200)
+    gyro_turn(70, accuracy=2)
+    rotate(motor_b, 120, min_speed=500, max_speed=500)
+    
+    #/////////////////////////////////////////////
+    rotate(motor_f, 100, 70, 1000)
+    gyro_straight(150, 100, 5.0)
+    gyro_turn(20, 2)
+    gyro_straight(50, 400, 4.0)
+    gyro_turn(-20, 2)
+    rotate(motor_f, -150, 100, 1000)
+    gyro_back_accel(200, accel=20, decel=50, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_turn(-80, 2)
+    gyro_straight_accel(430, accel=20, decel=10, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     
 
 
 
-    # gyro_back_accel(1400, accel=100, decel=150, min_speed=80, max_speed=700, end_speed=60)
+
+
+
+
+
 
 
 
 
 def mission_6():
-    pass
+    drift(960, -0.35, 700, True)
 
 
 def mission_7():
