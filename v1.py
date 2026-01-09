@@ -13,6 +13,9 @@ hub = PrimeHub()
 # Отключаем стандартную остановку - будем сами обрабатывать
 hub.system.set_stop_button(None)
 
+# Коррекция гироскопа (полный оборот = 354° вместо 360°)
+GYRO_SCALE = 360 / 354  # ≈ 1.017
+
 print("Загрузка...")
 
 left_motor = Motor(Port.A)
@@ -140,11 +143,14 @@ def gyro_back_accel(distance_degrees, accel=200, decel=200,
 def gyro_turn(target_angle, accuracy=2):
     hub.imu.reset_heading(0)
     
+    # Коррекция под гироскоп
+    adjusted_target = target_angle / GYRO_SCALE
+    
     while True:
         check_stop()  # Проверка остановки
         
         current = hub.imu.heading()
-        error = target_angle - current
+        error = adjusted_target - current
         
         if error > 180:
             error -= 360
@@ -157,7 +163,7 @@ def gyro_turn(target_angle, accuracy=2):
         if abs(error) > 30:
             speed = 300
         else:
-            speed = abs(error) * 2.5
+            speed = abs(error) * 3
             if speed < 35:
                 speed = 35
         
@@ -305,13 +311,16 @@ def gyro_turn_with_motor(target_angle, motor, motor_angle,
     """
     hub.imu.reset_heading(0)
     
+    # Коррекция под гироскоп
+    adjusted_target = target_angle / GYRO_SCALE
+    
     motor.run_angle(motor_speed, motor_angle, wait=False)
     
     while True:
         check_stop()
         
         current = hub.imu.heading()
-        error = target_angle - current
+        error = adjusted_target - current
         
         if error > 180:
             error -= 360
@@ -506,7 +515,7 @@ def mission_1():
     gyro_turn(50, accuracy=3)
     gyro_back_accel(700, accel=100, decel=100, min_speed=80, max_speed=700, end_speed=60)
     gyro_turn(85, accuracy=3)
-    gyro_back(150, speed=1000, gain=5.0)
+    gyro_back(140, speed=1000, gain=5.0)
     drift(700, -3, 300, True)
     wait(300)
     gyro_turn(100, accuracy=3)
@@ -527,7 +536,10 @@ def mission_1():
 
 
 def mission_2():
-    pass
+    gyro_straight_accel(500, accel=200, decel=200, min_speed=150, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_turn(90, 2)
+    gyro_turn(-90, 2)
+    gyro_back_accel(600, accel=200, decel=200, min_speed=150, max_speed=1000, end_speed=80, gain=5.0)
 
 
 def mission_3():
@@ -535,7 +547,7 @@ def mission_3():
     gyro_back_accel(160, accel=100, decel=100, min_speed=80, max_speed=800, end_speed=60)
     gyro_turn(-40, accuracy=2)
     gyro_straight_accel(170, accel=200, decel=140, min_speed=150, max_speed=700, end_speed=80, gain=5.0)
-    drift(450, -3, 900, False)
+    drift(450, -3, 1000, False)
     wait(100)
     gyro_turn(-50, accuracy=2)
     gyro_straight_accel(250, accel=10, decel=30, min_speed=150, max_speed=1000, end_speed=80, gain=5.0)
@@ -550,7 +562,7 @@ def mission_3():
     rotate(motor_f, 90, 70, 250)
     wait(100)
     gyro_turn(30, 2)
-    gyro_straight(30, 400, 4.0)
+    gyro_straight(15, 400, 4.0)
     rotate(motor_f, 100, 50, 250)
     gyro_turn(-60)
     gyro_straight(180, 400, 4.0)
@@ -562,25 +574,25 @@ def mission_3():
     gyro_straight_accel(300, accel=100, decel=150, min_speed=80, max_speed=1000, end_speed=60)
 
 
-    gyro_turn(-30, 2)
-    drift(550, -0.4, 700, True)
+    gyro_turn(-35, 2)
+    drift(570, -0.4, 700, True)
     rotate(motor_b, 300, 700, 1000)
     gyro_turn(-3, 2)
     rotate(motor_b, 3000, 700, 1000)
-    rotate(motor_b, -400, 900, 1000)
+    rotate(motor_b, -600, 800, 1000)
 
-    gyro_turn(-70, 2)
+    gyro_turn(-60, 2)
     gyro_straight_accel(50, accel=10, decel=10, min_speed=80, max_speed=1000, end_speed=60)
     gyro_turn(80, 2)
-    gyro_straight(90, 500, 4.0)
+    gyro_straight(130, 500, 4.0)
     gyro_turn(50, 2)
-    gyro_back_accel(100, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
-    gyro_turn(40, 2)
-    gyro_back_accel(250, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_back_accel(50, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_turn(45, 2)
+    gyro_back_accel(300, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
 
     rotate(motor_f, -180, 900, 1000)
     rotate(motor_f, 180, 900, 1000)
-    gyro_straight_accel(200, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
+    gyro_straight_accel(170, accel=20, decel=20, min_speed=80, max_speed=1000, end_speed=60)
     gyro_turn(-70, 2)
     gyro_straight_accel(1400, accel=50, decel=50, min_speed=80, max_speed=1000, end_speed=60)
 
@@ -635,14 +647,14 @@ def mission_5():
     # Tap-tap-tap-tap Final
 
     gyro_back(120, speed=1000, gain=5.0)
-    gyro_turn(-95, accuracy=2)
-    gyro_straight(150, 900, 5.0)
+    gyro_turn(-90, accuracy=2)
+    gyro_straight_accel(120, accel=20, decel=40, min_speed=100, max_speed=900, end_speed=80, gain=5.0)
     gyro_turn(90, 2)
     wait(200)
-    gyro_straight_accel(810, accel=20, decel=40, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_straight_accel(780, accel=20, decel=40, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     rotate(motor_b, -150, min_speed=50, max_speed=1000)
     wait(200)
-    gyro_turn(-22, accuracy=2)
+    gyro_turn(-20, accuracy=2)
     gyro_back(20, 100, 4.0)
     wait(200)
     gyro_turn(70, accuracy=2)
@@ -655,7 +667,7 @@ def mission_5():
     gyro_straight(50, 400, 4.0)
     gyro_turn(-20, 2)
     rotate(motor_f, -150, 100, 1000)
-    gyro_back_accel(200, accel=20, decel=50, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
+    gyro_back_accel(150, accel=20, decel=50, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     gyro_turn(-80, 2)
     gyro_straight_accel(430, accel=20, decel=10, min_speed=100, max_speed=1000, end_speed=80, gain=5.0)
     
